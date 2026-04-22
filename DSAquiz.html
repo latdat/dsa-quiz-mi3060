@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DSA Quiz – MI3060</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap');
+  :root {
+    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+    --border: #30363d; --border2: #444c56;
+    --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+    --accent: #58a6ff; --accent2: #1f6feb;
+    --green: #3fb950; --green-bg: rgba(63,185,80,.15);
+    --red: #f85149; --red-bg: rgba(248,81,73,.15);
+    --yellow: #d29922; --yellow-bg: rgba(210,153,34,.12);
+    --purple: #bc8cff;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Be Vietnam Pro', sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; }
+
+  /* ── HEADER ── */
+  .header { background:var(--bg2); border-bottom:1px solid var(--border); padding:14px 24px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:100; }
+  .logo { font-family:var(--mono); font-size:13px; color:var(--accent); font-weight:700; letter-spacing:.5px; }
+  .header-title { font-size:13px; color:var(--text2); flex:1; }
+  .header-score { font-family:var(--mono); font-size:12px; color:var(--text2); background:var(--bg3); border:1px solid var(--border); padding:4px 10px; border-radius:6px; }
+
+  /* ── SCREENS ── */
+  #screen-home, #screen-quiz, #screen-result { display:none; }
+  #screen-home.active, #screen-quiz.active, #screen-result.active { display:block; }
+
+  /* ── HOME ── */
+  .home-wrap { max-width:760px; margin:0 auto; padding:48px 24px; }
+  .home-hero { text-align:center; margin-bottom:40px; }
+  .home-hero h1 { font-size:28px; font-weight:700; letter-spacing:-.5px; }
+  .home-hero h1 span { color:var(--accent); }
+  .home-hero p { color:var(--text2); margin-top:8px; font-size:14px; }
+  .parts-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; margin-bottom:24px; }
+  .part-card { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:18px; cursor:pointer; transition:all .2s; position:relative; overflow:hidden; }
+  .part-card::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,transparent 60%,rgba(88,166,255,.05)); }
+  .part-card:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 8px 24px rgba(88,166,255,.12); }
+  .part-card.selected { border-color:var(--accent); background:rgba(88,166,255,.08); }
+  .part-num { font-family:var(--mono); font-size:11px; color:var(--accent); font-weight:700; margin-bottom:6px; text-transform:uppercase; letter-spacing:.8px; }
+  .part-title { font-size:13px; font-weight:600; color:var(--text); line-height:1.4; }
+  .part-count { font-size:11px; color:var(--text3); margin-top:6px; }
+  .home-opts { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:18px 20px; margin-bottom:20px; display:flex; gap:20px; flex-wrap:wrap; }
+  .opt-item { display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:var(--text2); }
+  .opt-item input[type=checkbox] { accent-color:var(--accent); width:15px; height:15px; cursor:pointer; }
+  .btn-start { width:100%; padding:14px; background:var(--accent2); border:none; border-radius:10px; color:#fff; font-size:15px; font-weight:600; cursor:pointer; font-family:var(--sans); transition:all .2s; }
+  .btn-start:hover { background:var(--accent); transform:translateY(-1px); }
+  .btn-all { background:var(--bg3); border:1px solid var(--border2); border-radius:8px; padding:8px 16px; color:var(--text2); font-size:12px; cursor:pointer; font-family:var(--sans); margin-bottom:12px; transition:.2s; }
+  .btn-all:hover { border-color:var(--accent); color:var(--accent); }
+
+  /* ── QUIZ ── */
+  .quiz-wrap { max-width:720px; margin:0 auto; padding:24px 24px 80px; }
+  .quiz-top { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+  .quiz-part-tag { font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.8px; color:var(--purple); background:rgba(188,140,255,.1); border:1px solid rgba(188,140,255,.25); padding:3px 9px; border-radius:20px; }
+  .quiz-progress-wrap { flex:1; height:4px; background:var(--bg3); border-radius:4px; overflow:hidden; }
+  .quiz-progress-bar { height:100%; background:var(--accent); border-radius:4px; transition:width .4s ease; }
+  .quiz-counter { font-family:var(--mono); font-size:12px; color:var(--text3); white-space:nowrap; }
+
+  .question-card { background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:28px; margin-bottom:16px; }
+  .q-num { font-family:var(--mono); font-size:11px; color:var(--text3); margin-bottom:12px; }
+  .q-text { font-size:15px; line-height:1.7; color:var(--text); white-space:pre-wrap; }
+  .q-text code, .code-block { font-family:var(--mono); font-size:13px; background:var(--bg3); border:1px solid var(--border); padding:12px 16px; border-radius:8px; display:block; margin:12px 0; white-space:pre; overflow-x:auto; line-height:1.6; color:#a5d6ff; }
+  .q-text code { display:inline; background:var(--bg3); border:1px solid var(--border); padding:1px 6px; border-radius:4px; font-size:13px; color:#a5d6ff; }
+
+  .options { display:flex; flex-direction:column; gap:10px; }
+  .opt { display:flex; align-items:flex-start; gap:14px; padding:14px 16px; background:var(--bg3); border:1.5px solid var(--border); border-radius:10px; cursor:pointer; transition:all .18s; }
+  .opt:hover:not(.disabled) { border-color:var(--accent2); background:rgba(88,166,255,.06); }
+  .opt-label { font-family:var(--mono); font-size:12px; font-weight:700; color:var(--text3); min-width:18px; padding-top:1px; }
+  .opt-text { font-size:14px; line-height:1.5; color:var(--text); flex:1; white-space:pre-wrap; }
+  .opt.selected { border-color:var(--accent); background:rgba(88,166,255,.1); }
+  .opt.selected .opt-label { color:var(--accent); }
+  .opt.correct { border-color:var(--green); background:var(--green-bg); }
+  .opt.correct .opt-label { color:var(--green); }
+  .opt.wrong { border-color:var(--red); background:var(--red-bg); }
+  .opt.wrong .opt-label { color:var(--red); }
+  .opt.show-correct { border-color:var(--green); background:var(--green-bg); }
+  .opt.show-correct .opt-label { color:var(--green); }
+  .opt.disabled { cursor:default; }
+
+  .feedback-box { padding:12px 16px; border-radius:10px; margin-top:2px; font-size:13px; display:none; }
+  .feedback-box.show { display:flex; align-items:center; gap:8px; }
+  .feedback-box.correct { background:var(--green-bg); border:1px solid var(--green); color:var(--green); }
+  .feedback-box.wrong { background:var(--red-bg); border:1px solid var(--red); color:var(--red); }
+
+  .quiz-nav { display:flex; gap:10px; margin-top:16px; }
+  .btn-nav { flex:1; padding:12px; border:1.5px solid var(--border2); border-radius:10px; background:var(--bg2); color:var(--text2); font-size:14px; font-weight:500; cursor:pointer; font-family:var(--sans); transition:.2s; }
+  .btn-nav:hover:not(:disabled) { border-color:var(--accent); color:var(--accent); }
+  .btn-nav:disabled { opacity:.35; cursor:not-allowed; }
+  .btn-nav.primary { background:var(--accent2); border-color:var(--accent2); color:#fff; }
+  .btn-nav.primary:hover { background:var(--accent); border-color:var(--accent); }
+  .btn-skip { background:transparent; border:none; color:var(--text3); font-size:13px; cursor:pointer; font-family:var(--sans); padding:8px 12px; border-radius:8px; transition:.2s; }
+  .btn-skip:hover { color:var(--yellow); }
+
+  /* ── RESULT ── */
+  .result-wrap { max-width:640px; margin:0 auto; padding:40px 24px; }
+  .result-hero { text-align:center; padding:32px; background:var(--bg2); border:1px solid var(--border); border-radius:16px; margin-bottom:20px; }
+  .result-score-ring { width:120px; height:120px; margin:0 auto 20px; position:relative; }
+  .result-score-ring svg { transform:rotate(-90deg); }
+  .ring-bg { fill:none; stroke:var(--bg3); stroke-width:10; }
+  .ring-fill { fill:none; stroke-width:10; stroke-linecap:round; transition:stroke-dashoffset 1s ease; }
+  .ring-label { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .ring-pct { font-family:var(--mono); font-size:22px; font-weight:700; }
+  .ring-sub { font-size:10px; color:var(--text3); }
+  .result-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; text-align:center; }
+  .stat-item { padding:14px; background:var(--bg3); border-radius:10px; }
+  .stat-val { font-family:var(--mono); font-size:20px; font-weight:700; }
+  .stat-lbl { font-size:11px; color:var(--text3); margin-top:4px; }
+  .val-green { color:var(--green); }
+  .val-red { color:var(--red); }
+  .val-yellow { color:var(--yellow); }
+  .result-btns { display:flex; gap:10px; margin-top:20px; }
+  .result-btn { flex:1; padding:13px; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; font-family:var(--sans); border:1.5px solid var(--border2); background:var(--bg2); color:var(--text2); transition:.2s; }
+  .result-btn:hover { border-color:var(--accent); color:var(--accent); }
+  .result-btn.primary { background:var(--accent2); border-color:var(--accent2); color:#fff; }
+  .result-btn.primary:hover { background:var(--accent); border-color:var(--accent); }
+
+  .review-list { margin-top:20px; display:flex; flex-direction:column; gap:10px; }
+  .review-item { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:16px; }
+  .review-item.wrong { border-color:rgba(248,81,73,.35); }
+  .review-item.correct { border-color:rgba(63,185,80,.25); }
+  .review-q { font-size:13px; color:var(--text2); margin-bottom:8px; white-space:pre-wrap; }
+  .review-meta { display:flex; gap:10px; font-size:12px; font-family:var(--mono); }
+  .review-yours { color:var(--red); } .review-correct { color:var(--green); }
+  .btn-back { display:flex; align-items:center; gap:6px; background:none; border:none; color:var(--text3); font-size:13px; cursor:pointer; font-family:var(--sans); margin-bottom:16px; padding:4px 0; transition:.2s; }
+  .btn-back:hover { color:var(--accent); }
+
+  /* mini map */
+  .qmap-wrap { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:12px 16px; margin-bottom:16px; }
+  .qmap-title { font-size:11px; color:var(--text3); margin-bottom:8px; font-family:var(--mono); }
+  .qmap { display:flex; flex-wrap:wrap; gap:4px; }
+  .qmap-dot { width:22px; height:22px; border-radius:4px; background:var(--bg3); border:1px solid var(--border); font-size:9px; font-family:var(--mono); display:flex; align-items:center; justify-content:center; color:var(--text3); cursor:pointer; transition:.15s; }
+  .qmap-dot:hover { border-color:var(--accent2); }
+  .qmap-dot.answered-correct { background:rgba(63,185,80,.2); border-color:var(--green); color:var(--green); }
+  .qmap-dot.answered-wrong { background:rgba(248,81,73,.2); border-color:var(--red); color:var(--red); }
+  .qmap-dot.current { border-color:var(--accent); box-shadow:0 0 0 2px rgba(88,166,255,.3); }
+  .qmap-dot.skipped { background:rgba(210,153,34,.15); border-color:var(--yellow); color:var(--yellow); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">▸ DSA</div>
+  <div class="header-title">Ôn tập Cấu trúc Dữ liệu & Giải thuật – MI3060</div>
+  <div class="header-score" id="hdr-score" style="display:none"></div>
+</div>
+
+<!-- HOME -->
+<div id="screen-home" class="active">
+  <div class="home-wrap">
+    <div class="home-hero">
+      <h1>Luyện tập <span>Trắc nghiệm DSA</span></h1>
+      <p>230 câu hỏi · 6 phần · Có giải thích đáp án</p>
+    </div>
+    <button class="btn-all" onclick="toggleAll()">☑ Chọn / Bỏ chọn tất cả phần</button>
+    <div class="parts-grid" id="parts-grid"></div>
+    <div class="home-opts">
+      <label class="opt-item"><input type="checkbox" id="opt-shuffle"> Trộn câu hỏi ngẫu nhiên</label>
+      <label class="opt-item"><input type="checkbox" id="opt-review"> Chỉ ôn câu sai (nếu có lịch sử)</label>
+      <label class="opt-item"><input type="checkbox" id="opt-instant" checked> Hiện đáp án ngay sau khi chọn</label>
+    </div>
+    <button class="btn-start" onclick="startQuiz()">Bắt đầu luyện tập →</button>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div id="screen-quiz">
+  <div class="quiz-wrap">
+    <div class="quiz-top">
+      <div class="quiz-part-tag" id="quiz-part-tag">Phần 1</div>
+      <div class="quiz-progress-wrap"><div class="quiz-progress-bar" id="quiz-pbar"></div></div>
+      <div class="quiz-counter" id="quiz-counter">0/0</div>
+    </div>
+    <div class="qmap-wrap">
+      <div class="qmap-title">Bản đồ câu hỏi</div>
+      <div class="qmap" id="qmap"></div>
+    </div>
+    <div class="question-card">
+      <div class="q-num" id="q-num"></div>
+      <div class="q-text" id="q-text"></div>
+    </div>
+    <div class="options" id="options"></div>
+    <div class="feedback-box" id="feedback"></div>
+    <div class="quiz-nav">
+      <button class="btn-nav" id="btn-prev" onclick="goQuestion(-1)">← Trước</button>
+      <button class="btn-skip" onclick="skipQuestion()">Bỏ qua</button>
+      <button class="btn-nav primary" id="btn-next" onclick="goQuestion(1)">Tiếp →</button>
+    </div>
+    <div style="text-align:center;margin-top:12px;">
+      <button onclick="endQuiz()" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;font-family:var(--sans);">Kết thúc & xem kết quả</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="screen-result">
+  <div class="result-wrap">
+    <button class="btn-back" onclick="goHome()">← Quay lại trang chủ</button>
+    <div class="result-hero">
+      <div class="result-score-ring">
+        <svg width="120" height="120" viewBox="0 0 120 120">
+          <circle class="ring-bg" cx="60" cy="60" r="50"/>
+          <circle class="ring-fill" id="ring-fill" cx="60" cy="60" r="50" stroke-dasharray="314" stroke-dashoffset="314"/>
+        </svg>
+        <div class="ring-label">
+          <span class="ring-pct" id="ring-pct">0%</span>
+          <span class="ring-sub">Điểm số</span>
+        </div>
+      </div>
+      <div class="result-stats">
+        <div class="stat-item"><div class="stat-val val-green" id="res-correct">0</div><div class="stat-lbl">Đúng</div></div>
+        <div class="stat-item"><div class="stat-val val-red" id="res-wrong">0</div><div class="stat-lbl">Sai</div></div>
+        <div class="stat-item"><div class="stat-val val-yellow" id="res-skip">0</div><div class="stat-lbl">Bỏ qua</div></div>
+      </div>
+    </div>
+    <div class="result-btns">
+      <button class="result-btn" onclick="goHome()">🏠 Trang chủ</button>
+      <button class="result-btn" onclick="restartQuiz()">🔄 Làm lại</button>
+      <button class="result-btn primary" onclick="reviewWrong()">👁 Xem câu sai</button>
+    </div>
+    <div class="review-list" id="review-list"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════
+const PARTS = [
+  { id:1, name:"Đánh giá Thuật toán & CTDL", short:"Phần 1", color:"#58a6ff" },
+  { id:2, name:"Chương trình in ra gì?", short:"Phần 2", color:"#bc8cff" },
+  { id:3, name:"Điền khuyết hoàn thiện thuật toán", short:"Phần 3", color:"#3fb950" },
+  { id:4, name:"Phát hiện lỗi trong đoạn mã", short:"Phần 4", color:"#f85149" },
+  { id:5, name:"Tháp Hà Nội", short:"Phần 5", color:"#d29922" },
+  { id:6, name:"Lý thuyết tổng hợp", short:"Phần 6", color:"#39d353" },
+];
+
+const Q = [
+// ── PHẦN 1 ──
+{p:1,q:"Trong đánh giá thuật toán, ký hiệu O (Big-Oh) biểu diễn điều gì?",o:["Chặn trên tiệm cận của hàm thời gian chạy","Chặn dưới tiệm cận của hàm thời gian chạy","Tiệm cận chặt của hàm thời gian chạy","Trường hợp tốt nhất của thuật toán"],a:0},
+{p:1,q:"Ký hiệu Ω (Big-Omega) mang ý nghĩa gì trong phân tích thuật toán?",o:["Tiệm cận chặt","Chặn trên tiệm cận","Chặn dưới tiệm cận","Độ phức tạp trung bình"],a:2},
+{p:1,q:"Nếu thời gian chạy của thuật toán là T(n) = 3n² + 5n + 100, độ phức tạp tính toán tiệm cận là:",o:["O(n)","O(n²)","O(n³)","O(1)"],a:1},
+{p:1,q:"Hàm nào sau đây có tốc độ tăng nhanh nhất (độ phức tạp lớn nhất)?",o:["O(n·log₂n)","O(n³)","O(2ⁿ)","O(n²)"],a:2},
+{p:1,q:"Thao tác truy cập phần tử thứ i của Mảng (A[i]) có độ phức tạp thời gian là bao nhiêu?",o:["O(1)","O(log n)","O(n)","O(n²)"],a:0},
+{p:1,q:"Trong danh sách (List) được cài đặt bằng Mảng, độ phức tạp của thao tác chèn phần tử vào vị trí k là?",o:["O(1)","O(n)","O(log n)","O(n log n)"],a:1},
+{p:1,q:"Thao tác thêm một phần tử vào cuối append(value) của List cài bằng Mảng có độ phức tạp là bao nhiêu ở trường hợp xấu nhất?",o:["O(1)","O(log n)","O(n)","O(n²)"],a:2},
+{p:1,q:"Thao tác lấy kích thước (size/length) của một List hoặc mảng tiêu tốn thời gian bao nhiêu?",o:["O(1)","O(n)","O(log n)","O(n²)"],a:0},
+{p:1,q:"Độ phức tạp của thao tác xóa phần tử ở vị trí k (remove(k)) trong List cài bằng Mảng là?",o:["O(1)","O(n)","O(log n)","O(n²)"],a:1},
+{p:1,q:"Nút (Node) cơ sở trong Danh sách móc nối đơn (Singly Linked List) chứa thông tin gì?",o:["Chỉ chứa giá trị (Data)","Chỉ chứa con trỏ tới nút tiếp theo (Next)","Giá trị (Data) và Con trỏ tới nút trước đó (Prev)","Giá trị (Data) và Con trỏ tới nút tiếp theo (Next)"],a:3},
+{p:1,q:"Trong Danh sách móc nối đơn, để thêm một nút vào ĐẦU danh sách, độ phức tạp thời gian là bao nhiêu?",o:["O(1)","O(n)","O(log n)","O(n²)"],a:0},
+{p:1,q:"Xóa nút đầu tiên trong Danh sách móc nối đơn tiêu tốn thời gian?",o:["O(n)","O(1)","O(log n)","O(n log n)"],a:1},
+{p:1,q:"Để tìm/truy cập phần tử thứ k trong Danh sách móc nối đơn, độ phức tạp thời gian là bao nhiêu?",o:["O(1)","O(log n)","O(n)","O(n²)"],a:2},
+{p:1,q:"Khi xóa một nút đứng SAU nút prevNode trong Danh sách móc nối đơn, thao tác diễn ra trong thời gian:",o:["O(1)","O(n)","O(log n)","O(n²)"],a:0},
+{p:1,q:"Ngăn xếp (Stack) hoạt động theo nguyên tắc nào sau đây?",o:["FIFO (First In First Out)","LIFO (Last In First Out)","Truy cập ngẫu nhiên","Mức độ ưu tiên cao nhất ra trước"],a:1},
+{p:1,q:"Hàng đợi (Queue) hoạt động theo nguyên lý nào?",o:["FIFO (First In First Out)","LIFO (Last In First Out)","FILO (First In Last Out)","Cơ chế nào cũng được"],a:0},
+{p:1,q:"Thao tác đưa một phần tử vào Ngăn xếp (Stack) được gọi là gì?",o:["enqueue","pop","push","insert"],a:2},
+{p:1,q:"Thao tác lấy phần tử ở đỉnh ra khỏi Ngăn xếp (Stack) gọi là gì?",o:["push","dequeue","top","pop"],a:3},
+{p:1,q:"Khi cài đặt Stack bằng Mảng, thao tác push(item) và pop() có độ phức tạp thời gian là bao nhiêu?",o:["O(n) cho push, O(1) cho pop","O(1) cho cả hai","O(n) cho cả hai","O(log n) cho cả hai"],a:1},
+{p:1,q:"Khi cài đặt Stack bằng Danh sách móc nối, đỉnh Stack nên đặt ở đâu để tối ưu thời gian?",o:["Tại nút cuối cùng của danh sách (Tail)","Tại nút đầu tiên của danh sách (Head)","Tại vị trí giữa danh sách","Ở đâu cũng mang lại hiệu năng O(1)"],a:1},
+{p:1,q:"Trong Hàng đợi (Queue), thao tác enqueue(item) có mục đích gì?",o:["Thêm phần tử vào đầu hàng","Lấy phần tử ra khỏi đầu hàng","Thêm phần tử vào cuối hàng","Xóa toàn bộ hàng đợi"],a:2},
+{p:1,q:"Trong Hàng đợi (Queue), thao tác dequeue() được thực hiện ở vị trí nào?",o:["Đầu hàng đợi (head)","Cuối hàng đợi (tail)","Giữa hàng đợi","Ở bất kỳ vị trí nào"],a:0},
+{p:1,q:"Nếu cài đặt Queue bằng Mảng vòng (Circular Array) với kích thước n, công thức cập nhật biến tail trong thao tác enqueue() là:",o:["tail = tail + 1","tail = (tail + 1) % n","tail = tail % n + 1","tail = n - 1"],a:1},
+{p:1,q:"Trong Queue cài bằng Mảng vòng kích thước n, điều kiện để xác định hàng đợi ĐẦY (isFull) là gì?",o:["head == tail","head == (tail + 1) % n","tail == n - 1","head == 0"],a:1},
+{p:1,q:"Khi cài đặt Queue bằng Mảng vòng, điều kiện hàng đợi RỖNG (isEmpty) là:",o:["tail == -1","head == tail","head == (tail + 1) % n","size == n"],a:1},
+{p:1,q:"Nếu cài đặt Queue bằng Linked List có lưu trữ hai con trỏ head và tail, để đạt O(1), ta gán như thế nào?",o:["Lối ra (dequeue) ở tail, lối vào (enqueue) ở head","Lối ra (dequeue) ở head, lối vào (enqueue) ở tail","Cả lối vào và lối ra ở head","Cả lối vào và lối ra ở tail"],a:1},
+{p:1,q:"Mỗi hàm đệ quy hợp lệ cần phải có cấu trúc gồm:",o:["Một hoặc nhiều vòng lặp while","Phần cơ sở (Base case) và Phần đệ quy (Recursive step)","Chỉ duy nhất một lệnh return","Các cấu trúc dữ liệu toàn cục"],a:1},
+{p:1,q:'Thế nào là "Đệ quy kết thúc" (Tail recursion)?',o:["Có xử lý thêm ngay sau khi trả về từ lời gọi đệ quy","Không có xử lý nào khác sau lời gọi đệ quy duy nhất","Các hàm đệ quy gọi lẫn nhau","Là hàm gọi đệ quy ở ngay dòng đầu tiên"],a:1},
+{p:1,q:"Hàm tính n! (giai thừa) bằng đệ quy:\nif (n<=0) return 1;\nreturn n * fact(n-1);\ncó độ phức tạp thời gian là?",o:["O(1)","O(log n)","O(n)","O(n²)"],a:2},
+{p:1,q:"Tính số Fibonacci bằng đệ quy ngây thơ:\nif(n<=1) return 1;\nreturn fib(n-1) + fib(n-2);\nKhẳng định nào đúng về độ phức tạp?",o:["Tiệm cận O(n)","Tiệm cận O(log n)","Tiệm cận O(n²)","Tốc độ tăng theo hàm mũ (xấp xỉ O(2ⁿ))"],a:3},
+{p:1,q:"Trong Tìm kiếm nhị phân đệ quy, sau mỗi lần gọi hàm, kích thước mảng tìm kiếm thay đổi thế nào?",o:["Giảm đi 1 phần tử","Giảm đi 2 phần tử","Giảm đi một nửa","Không thay đổi"],a:2},
+{p:1,q:"Độ phức tạp của Tìm kiếm nhị phân (Binary Search) là?",o:["O(1)","O(log₂n)","O(n)","O(n log n)"],a:1},
+{p:1,q:"Đoạn code:\nfor(int i=0; i<n; i++) {\n  sum = sum + a[i];\n}\nĐộ phức tạp là:",o:["O(1)","O(log n)","O(n)","O(n²)"],a:2},
+{p:1,q:"Đoạn code lồng nhau:\nfor(i=0; i<n; i++)\n  for(j=0; j<n; j++)\n    count++;\nĐộ phức tạp thời gian là?",o:["O(n)","O(n log n)","O(n²)","O(n³)"],a:2},
+{p:1,q:"Phân tích đoạn mã:\nfor(int i=1; i<n; i = i*2) { x++; }\nĐộ phức tạp thời gian là bao nhiêu?",o:["O(n)","O(1)","O(log₂n)","O(n²)"],a:2},
+{p:1,q:"Đệ quy chéo (Mutual recursion) xảy ra khi nào?",o:["Một hàm gọi chính nó ở hai nơi khác nhau","Các hàm đệ quy gọi lẫn nhau","Hàm đệ quy gọi qua con trỏ mảng","Hàm trả về kết quả mà không có biến trung gian"],a:1},
+{p:1,q:"Khi đếm các phép toán sơ cấp của một thuật toán, ta thường quan tâm nhất đến trường hợp nào?",o:["Trường hợp tốt nhất (Best-case)","Trường hợp xấu nhất (Worst-case)","Trường hợp trung bình (Average-case)","Tất cả đều bằng nhau"],a:1},
+{p:1,q:"Trong danh sách móc nối vòng (Circular Linked List), con trỏ next của nút cuối cùng trỏ về đâu?",o:["Trỏ về NULL","Trỏ về nút giữa danh sách","Trỏ về nút áp chót","Trỏ về nút đầu tiên (head)"],a:3},
+{p:1,q:"Cấu trúc Danh sách móc nối kép (Doubly Linked List) khác với Móc nối đơn ở điểm nào?",o:["Lưu trữ hai giá trị data trong mỗi nút","Sử dụng hai mảng để cài đặt","Mỗi nút lưu hai con trỏ: nút kế tiếp và nút trước đó","Bắt buộc phải là vòng (circular)"],a:2},
+{p:1,q:"Khẳng định nào đúng khi so sánh List cài bằng Mảng và List cài bằng Linked List?",o:["Mảng có kích thước linh hoạt vô tận, Linked List cần kích thước xác định","Mảng hỗ trợ truy cập ngẫu nhiên phần tử thứ k trong O(1), Linked List tốn O(n)","Chèn ở đầu mảng mất O(1), ở đầu Linked List mất O(n)","Cả hai đều yêu cầu vùng nhớ liên tục"],a:1},
+{p:1,q:"Hệ thức truy hồi T(n) = T(n−1) + c (với c là hằng số) biểu diễn độ phức tạp nào?",o:["O(log n)","O(n)","O(n²)","O(2ⁿ)"],a:1},
+{p:1,q:"Bài toán Tháp Hà Nội với n đĩa có độ phức tạp thời gian theo hàm nào?",o:["O(n)","O(n log n)","O(n²)","O(2ⁿ)"],a:3},
+{p:1,q:"Trong Queue, nếu dùng Python list với lệnh pop(0) để dequeue, độ phức tạp là bao nhiêu?",o:["O(1)","O(n)","O(log n)","O(n²)"],a:1},
+{p:1,q:"Bạn cần kiểm tra tính hợp lệ của dấu ngoặc trong biểu thức toán học. CTDL nào phù hợp nhất?",o:["Queue","Stack","Array","Linked List thông thường"],a:1},
+{p:1,q:"Mảng hai chiều (Ma trận) được lưu trữ trong bộ nhớ máy tính thực chất dưới dạng nào?",o:["Một vùng nhớ hình vuông vật lý trên RAM","Một khối mảng 1 chiều liên tục","Sử dụng Danh sách móc nối","Một ngăn xếp (Stack)"],a:1},
+{p:1,q:"Hệ thức truy hồi T(n) = 2T(n/2) + O(n). Độ phức tạp là bao nhiêu?",o:["O(n)","O(log n)","O(n log n)","O(n²)"],a:2},
+{p:1,q:"Khi muốn xử lý văn bản HTML (so khớp thẻ <name> và </name>), CTDL nào hiệu quả nhất?",o:["Queue","Stack","Array","Circular Linked List"],a:1},
+{p:1,q:"Nhược điểm lớn nhất khi khử đệ quy của hàm KHÔNG CÓ đặc tính tail recursion bằng vòng lặp là gì?",o:["Cần thêm biến hằng số","Mã nguồn trở nên quá ngắn","Cần một Stack tường minh để lưu trữ ngữ cảnh","Làm thuật toán chạy chậm hơn đệ quy ban đầu"],a:2},
+{p:1,q:"Trong đệ quy đếm ngược countDown(n), khi gọi countDown(n-1) xong thì hàm làm gì tiếp theo?",o:["Nhân với n","Tính countDown(n-2)","Chỉ kết thúc (hành vi đệ quy kết thúc)","Ném ra ngoại lệ"],a:2},
+{p:1,q:"Hệ thức 1 = Θ(1) đại diện cho điều gì trong phân tích thuật toán?",o:["Hàm tuyến tính","Hàm logarit","Hàm hằng (Constant time)","Hàm bậc hai"],a:2},
+{p:1,q:"TA(n) = 3n³ và TB(n) = 1000n². Khẳng định nào đúng về độ phức tạp tiệm cận?",o:["Thuật toán A tốt hơn B","Thuật toán B tốt hơn A","Hai thuật toán có độ phức tạp tương đương","Không thể so sánh vì hệ số của B lớn hơn"],a:1},
+{p:1,q:"TA(n) = 3n³ và TB(n) = 1000n². Với giá trị nào của n thì thuật toán A thực thi nhanh hơn thuật toán B?",o:["n ≥ 334","n ≤ 333","n ≥ 1000","n ≤ 1000"],a:1},
+{p:1,q:"Phân tích:\nfor(int i=1; i<=n; i++)\n  for(int j=0; j<=i; j++)\n    s += j*(i-j+1);\nT(n) là số lần cộng tích lũy vào s. Biểu thức chính xác T(n) là:",o:["n(n+1)/2","n(n-1)/2","(n+1)(n+2)/2 - 1","n²"],a:2},
+{p:1,q:"Kiểm tra có tồn tại a∈A, b∈B, c∈C sao cho a=b và a=c bằng 3 vòng lặp for lồng nhau. Độ phức tạp worst-case là:",o:["O(n)","O(n²)","O(n³)","O(n log n)"],a:2},
+{p:1,q:"Trong Insertion Sort:\nfor(int i=1;i<n;i++){\n  int cur=a[i]; int j=i-1;\n  while(j>=0 && a[j]>cur){\n    a[j+1]=a[j]; j--;\n  }\n}\nTrường hợp xấu nhất (mảng giảm dần), số lần thực hiện a[j+1]=a[j] là:",o:["n(n-1)/2","n-1","n(n+1)/2","n²"],a:0},
+{p:1,q:"Sắp xếp theo tốc độ tăng từ chậm nhất đến nhanh nhất:\nf₁(n) = n\nf₂(n) = log₂(n·log₂n)\nf₃(n) = log₂n",o:["f₃ < f₂ < f₁","f₂ < f₃ < f₁","f₁ < f₃ < f₂","f₃ < f₁ < f₂"],a:0},
+{p:1,q:"Từ điển 56.000 từ đã sắp xếp, dùng Binary Search. Trong trường hợp xấu nhất cần tối đa bao nhiêu lần chia đôi?",o:["56000","15","16","256"],a:2},
+{p:1,q:"Hệ thức truy hồi: aₙ = 2aₙ₋₁ + 1, a₁ = 1. Độ phức tạp tiệm cận là:",o:["O(n)","O(n²)","O(n log n)","O(2ⁿ)"],a:3},
+{p:1,q:"Hệ thức truy hồi: aₙ = 2aₙ/₂ + 2 (với a₂ = 1). Độ phức tạp nghiệm tiệm cận là:",o:["O(log n)","O(n)","O(n log n)","O(n²)"],a:1},
+{p:1,q:"Phương pháp Horner tính đa thức bậc n:\nP(x) = a₀ + x(a₁ + x(a₂ + ... + x·aₙ)...)\nSố phép nhân cần thực hiện chính xác là:",o:["n","2n","n(n+1)/2","n²"],a:0},
+{p:1,q:"Thuật toán đệ quy in ra tất cả hoán vị của n phần tử có độ phức tạp thời gian thuộc lớp nào?",o:["O(n²)","O(2ⁿ)","O(n!)","O(nⁿ)"],a:2},
+{p:1,q:"Phân tích:\nfor(int i=0; i<=n-3; i++)\n  for(int j=i+1; j<=n-2; j++)\n    if(a[j]>a[i]) swap(a[i],a[j]);\nPhép so sánh a[j]>a[i] thực thi chính xác bao nhiêu lần?",o:["n(n-1)/2","(n-1)(n-2)/2","n(n+1)/2","(n-2)²"],a:1},
+{p:1,q:"Thuật toán trộn (Merge) hai mảng đã sắp xếp kích thước n và m thành một mảng có tính sắp xếp. Độ phức tạp là:",o:["O(n×m)","O(max(n,m))","O(n+m)","O(n·log m)"],a:2},
+{p:1,q:"Siêu máy tính 10⁹ phép toán/giây. Thuật toán chạy 2^100 phép toán. Thời gian xấp xỉ là bao nhiêu?\n(Sử dụng xấp xỉ 2^10 ≈ 10³)",o:["Khoảng 1 giây","Khoảng 1000 giây","Khoảng vài giờ đồng hồ","Một khoảng thời gian khổng lồ (hàng tỷ năm)"],a:3},
+{p:1,q:"Đoạn code Horner:\nint val = a[n-1];\nfor(int i=1; i<n; i++)\n  val = val * x + a[n-1-i];\nSố phép nhân '*' được thực thi là:",o:["n","n-1","n+1","2n"],a:1},
+{p:1,q:"f(n) = 100n·log₂n và g(n) = n²/log₂n. Khi n→∞, khẳng định nào đúng?",o:["f(n) tăng nhanh hơn g(n)","g(n) tăng nhanh hơn f(n)","Hai hàm có tốc độ tăng tương đương","Không thể so sánh"],a:1},
+{p:1,q:"Hệ thức T(n) = T(n−1) + T(n−2) với T(1) = T(2) = 1. Độ phức tạp tiệm cận thuộc lớp nào?",o:["O(n²)","O(n log n)","O(2ⁿ)","O(n!)"],a:2},
+{p:1,q:"Phân tích đoạn mã:\nint i = n; int count = 0;\nwhile(i > 1) { i = i/2; count++; }\nGiá trị biến count xấp xỉ bằng hàm nào (giả sử n là lũy thừa 2)?",o:["n","n²","log₂n","n·log₂n"],a:2},
+{p:1,q:"TA(n) = √n và TB(n) = log₂n. Khi kích thước bài toán n vô cùng lớn, thuật toán nào chạy nhanh hơn?",o:["Thuật toán A (√n) chạy nhanh hơn B","Thuật toán B (log₂n) chạy nhanh hơn A","Hai thuật toán chạy với tốc độ tương đương","Chỉ so sánh khi biết giá trị cụ thể n"],a:1},
+{p:1,q:"Xét định nghĩa toán học chuẩn của Ký hiệu Θ (tiệm cận chặt). Hàm f(n) = Θ(g(n)) nếu tồn tại c₁, c₂, n₀ > 0 sao cho:",o:["c₁·g(n) ≤ f(n) ≤ c₂·g(n), ∀n ≥ n₀","f(n) ≤ c₁·g(n), ∀n ≥ n₀","f(n) ≥ c₂·g(n), ∀n ≥ n₀","c₁·f(n) ≤ g(n) ≤ c₂·f(n), ∀n ≤ n₀"],a:0},
+{p:1,q:"Phân tích đoạn mã:\nfor(int i=1; i<=n; i++)\n  for(int j=1; j<=n; j+=i)\n    count++;\nĐộ phức tạp thời gian là:",o:["O(n²)","O(n log n)","O(n)","O(log n)"],a:1},
+{p:1,q:"Phân tích vòng lặp:\nint i = 1;\nwhile(i < n) { i = i * 3; }\nĐộ phức tạp thời gian là bao nhiêu?",o:["O(n)","O(n³)","O(log₃n)","O(1)"],a:2},
+{p:1,q:"Phân tích hàm đệ quy:\nint foo(int n) {\n  if(n<=1) return 1;\n  return foo(n-1) + foo(n-1);\n}\nĐộ phức tạp thời gian T(n) là:",o:["O(n)","O(n²)","O(2ⁿ)","O(n log n)"],a:2},
+{p:1,q:"Phân tích hàm đệ quy:\nint bar(int n) {\n  if(n<=1) return 1;\n  return bar(n/2) + bar(n/2) + 1;\n}\nĐộ phức tạp là:",o:["O(log n)","O(n)","O(n log n)","O(n²)"],a:1},
+{p:1,q:"Đánh giá độ phức tạp:\nint p = 0;\nfor(int i=1; p<=n; i++) {\n  p = p + i;\n}\nĐộ phức tạp là:",o:["O(n)","O(√n)","O(log n)","O(n²)"],a:1},
+{p:1,q:"Phân tích đoạn mã:\nfor(int i=n; i>0; i/=2)\n  for(int j=0; j<i; j++)\n    count++;\nSố lần count++ có độ phức tạp tiệm cận là:",o:["O(n log n)","O(n²)","O(n)","O(log n)"],a:2},
+{p:1,q:"Đoạn mã thêm phần tử vào linked list:\nfor(int i=0; i<n; i++) {\n  Node* newNode = new Node(i);\n  newNode->next = head;\n  head = newNode;\n}\nĐộ phức tạp thời gian của toàn bộ đoạn mã này là:",o:["O(1)","O(n)","O(n log n)","O(n²)"],a:1},
+{p:1,q:"Đoạn mã xử lý mảng A kích thước n (kỹ thuật hai con trỏ):\nwhile(i < j) {\n  if(A[i]+A[j]==X) return true;\n  else if(A[i]+A[j]<X) i++;\n  else j--;\n}\nTrường hợp xấu nhất, độ phức tạp là:",o:["O(n)","O(n log n)","O(n²)","O(1)"],a:0},
+{p:1,q:"Phân tích 3 vòng lặp lồng nhau:\nfor(int i=0; i<n; i++)\n  for(int j=0; j<n; j++)\n    for(int k=0; k<j; k++)\n      x++;\nĐộ phức tạp tính toán là:",o:["O(n²)","O(n²·log n)","O(n³)","O(n⁴)"],a:2},
+{p:1,q:"Đoạn code đệ quy kết hợp vòng lặp:\nvoid solve(int n) {\n  if(n==0) return;\n  for(int i=0; i<n; i++) printf(\"%d\",i);\n  solve(n/2); solve(n/2);\n}\nĐộ phức tạp thời gian của hàm solve(n) là:",o:["O(n)","O(n log n)","O(n²)","O(2ⁿ)"],a:1},
+
+// ── PHẦN 2 ──
+{p:2,q:"Đoạn mã sau in ra giá trị nào?\nint arr[] = {10, 20, 30, 40};\nint *p = arr;\ncout << *(p + 2);",o:["10","20","30","40"],a:2},
+{p:2,q:"Kết quả của đoạn mã sau là gì?\nstack<int> s;\ns.push(5); s.push(10); s.pop();\ns.push(15);\ncout << s.top();",o:["5","10","15","Stack rỗng"],a:2},
+{p:2,q:"Hàng đợi q sau khi thực hiện các lệnh sau sẽ có giá trị front là bao nhiêu?\nqueue<int> q;\nq.push(1); q.push(2); q.push(3);\nq.pop(); q.pop();\ncout << q.front();",o:["1","2","3","Queue rỗng"],a:2},
+{p:2,q:"Đoạn mã đệ quy sau trả về giá trị bao nhiêu với test(4)?\nint test(int n) {\n  if(n==1) return 2;\n  return 3 + test(n-1);\n}",o:["9","11","13","14"],a:1},
+{p:2,q:"In ra kết quả của mảng sau vòng lặp:\nint a[3] = {1, 2, 3};\nfor(int i=0; i<2; i++) a[i+1] += a[i];\ncout << a[2];",o:["3","5","6","4"],a:2},
+{p:2,q:"Đoạn mã sau in ra chuỗi gì?\nstring s = \"HUST\";\nstack<char> st;\nfor(char c : s) st.push(c);\nwhile(!st.empty()) { cout << st.top(); st.pop(); }",o:["HUST","TSUH","HHT","USTH"],a:1},
+{p:2,q:"Cho Danh sách móc nối đơn: 5 → 10 → 15 → NULL\nLệnh nào in ra giá trị 15?",o:["cout << head->data;","cout << head->next->data;","cout << head->next->next->data;","cout << head->next->next->next->data;"],a:2},
+{p:2,q:"Kết quả của lời gọi sum(3) là:\nint sum(int n) {\n  if(n<=0) return 0;\n  return n*n + sum(n-1);\n}",o:["6","9","14","15"],a:2},
+{p:2,q:"Thao tác mảng sau in ra gì?\nint a[] = {1, 2, 3, 4};\nint x = a[a[1]];\ncout << x;",o:["1","2","3","4"],a:2},
+{p:2,q:"Sau khi thực hiện, giá trị của q.size() là:\nqueue<int> q;\nq.push(10); q.push(20);\nif(!q.empty()) q.pop();\nq.push(30);",o:["1","2","3","0"],a:1},
+{p:2,q:"Đoạn mã sau in ra gì?\nint count = 0;\nfor(int i=0; i<5; i++) {\n  if(i % 2 == 0) count++;\n}\ncout << count;",o:["2","3","4","5"],a:1},
+{p:2,q:"Hàm fun(10) trả về:\nint fun(int n) {\n  if(n==0) return 0;\n  return (n%2) + fun(n/2);\n}",o:["1","2","3","4"],a:1},
+{p:2,q:"Kết quả của s.top() là:\nstack<int> s;\nfor(int i=1; i<=3; i++) s.push(i*2);\ns.pop();",o:["2","4","6","8"],a:1},
+{p:2,q:"Cho head trỏ vào 1 → 2 → 3. Sau lệnh:\nhead = head->next;\nhead->data là:",o:["1","2","3","NULL"],a:1},
+{p:2,q:"Vòng lặp sau thực hiện bao nhiêu lần?\nint i = 10;\nwhile(i > 0) { i /= 2; }",o:["3","4","5","6"],a:1},
+{p:2,q:"Đoạn mã sau in ra gì?\nint a = 5, b = 10;\nint *p1 = &a, *p2 = &b;\n*p1 = *p2;\ncout << a;",o:["5","10","15","Lỗi"],a:1},
+{p:2,q:"Kết quả của q.front() sau khi thực hiện:\nqueue<int> q;\nq.push(5); q.push(10);\nint x = q.front();\nq.push(x+1); q.pop();",o:["5","6","10","11"],a:2},
+{p:2,q:"Hàm đệ quy f(3) in ra gì?\nvoid f(int n) {\n  if(n==0) return;\n  f(n-1);\n  cout << n;\n}",o:["321","123","3","1"],a:1},
+{p:2,q:"Giá trị của s sau vòng lặp là:\nint s = 0;\nint a[] = {1, 2, 3, 4};\nfor(int i=0; i<4; i+=2) s += a[i];",o:["4","10","4","6"],a:2},
+{p:2,q:"Đoạn mã sau, in ra st.top():\nstack<int> st;\nst.push(1);\nst.push(st.top() + 2);",o:["1","2","3","4"],a:2},
+{p:2,q:"Kết quả của factorial(3):\nint factorial(int n) {\n  if(n<=1) return 1;\n  return n * factorial(n-1);\n}",o:["1","3","6","9"],a:2},
+{p:2,q:"Mảng a có {1,2,3,4,5}.\ncout << a[4-2];\nin ra:",o:["2","3","4","5"],a:1},
+{p:2,q:"queue<int> q;\nq.push(7); q.push(8); q.pop(); q.push(9);\nq.front() là:",o:["7","8","9","Queue rỗng"],a:1},
+{p:2,q:"Đoạn mã sau in ra gì?\nint x = 10;\nint &y = x;\ny = 20;\ncout << x;",o:["10","20","30","Lỗi"],a:1},
+{p:2,q:"stack<int> s;\ns.push(1); s.push(2); s.push(3);\nIn ra s.size():",o:["1","2","3","0"],a:2},
+{p:2,q:"In ra kết quả của pow(2,3):\nint pow(int a, int b) {\n  if(b==0) return 1;\n  return a * pow(a, b-1);\n}",o:["6","8","9","16"],a:1},
+{p:2,q:"int a = 10;\nint *p = &a;\ncout << *p + 1;\nin ra:",o:["10","11","Địa chỉ","Lỗi"],a:1},
+{p:2,q:"Cho List A = [1,2,3]. A.insert(1, 4) (chèn 4 vào vị trí 1). List trở thành:",o:["[4,1,2,3]","[1,4,2,3]","[1,2,4,3]","[1,4,3]"],a:1},
+{p:2,q:"Kết quả q.back() (phần tử cuối) sau:\nqueue<int> q;\nq.push(1); q.push(2);",o:["1","2","NULL","Lỗi"],a:1},
+{p:2,q:"void f(int n) {\n  if(n>0) { f(n-1); }\n  cout << n;\n}\nLời gọi f(1) in ra:",o:["1","01","10","0"],a:1},
+{p:2,q:"Đoạn mã đệ quy phức hợp in ra gì với solve(4)?\nvoid solve(int n) {\n  if(n<=1) return;\n  solve(n-2);\n  cout << n;\n  solve(n-3);\n}",o:["42","24","432","234"],a:1},
+{p:2,q:"Circular Array N=5, head=3, tail=2. Sau khi enqueue thêm 3 phần tử và dequeue 1 phần tử, head và tail lần lượt là:",o:["head=4, tail=4","head=4, tail=0","head=3, tail=4","head=0, tail=4"],a:1},
+{p:2,q:"Phân tích đoạn mã con trỏ trên Linked List:\n// head → 1 → 2 → 3 → 4\nNode *p = head, *q = head->next;\np->next = q->next;\nq->next = p;\nhead = q;\nThứ tự giá trị sau khi chạy là:",o:["2, 1, 3, 4","1, 2, 3, 4","2, 3, 1, 4","1, 3, 2, 4"],a:0},
+{p:2,q:"Hàm sau trả về bao nhiêu khi gọi calc(5)?\nint calc(int n) {\n  if(n<=1) return 1;\n  if(n%2==0) return calc(n/2);\n  return calc(n-1) + calc(n-2);\n}",o:["2","3","5","8"],a:1},
+{p:2,q:"Kết quả của đoạn mã Stack và Queue kết hợp:\nstack<int> s; queue<int> q;\nq.push(1); q.push(2); q.push(3);\nwhile(!q.empty()){ s.push(q.front()); q.pop(); }\nwhile(!s.empty()){ cout<<s.top(); s.pop(); }",o:["123","321","132","312"],a:1},
+{p:2,q:"Hàm đệ quy với biến static:\nint static_fun(int n) {\n  static int x = 0;\n  if(n<=0) return 1;\n  x++;\n  return static_fun(n-1) + x;\n}\nGiá trị trả về của static_fun(3) là:",o:["7","10","13","15"],a:1},
+{p:2,q:"Thao tác trên mảng 2 chiều:\nint a[3][3] = {{1,2,3},{4,5,6},{7,8,9}};\nint *p = &a[0][0];\ncout << *(p + 5);",o:["4","5","6","7"],a:2},
+{p:2,q:"Đoạn mã sau in ra kết quả gì?\nint x = 5;\nvoid change(int *p) {\n  static int y = 10;\n  *p = y++;\n}\nchange(&x);\ncout << x;",o:["5","10","11","Lỗi"],a:1},
+{p:2,q:"Danh sách móc nối kép: NULL ← 1 ⇄ 2 ⇄ 3 → NULL.\nLệnh:\ncurr = head->next;\ncurr->prev->next = curr->next;\ncurr->next->prev = curr->prev;\nThực hiện việc gì?",o:["Xóa nút 1","Xóa nút 2","Xóa nút 3","Đảo ngược danh sách"],a:1},
+{p:2,q:"Kết quả của mystery(13):\nvoid mystery(int n) {\n  if(n<=0) return;\n  mystery(n/2);\n  cout << n%2;\n}",o:["1101","1011","1110","1001"],a:0},
+{p:2,q:"Đệ quy lồng: f(f(2)) với\nint f(int n) { return (n<=0) ? 1 : n * f(n-1); }",o:["1","2","4","6"],a:1},
+{p:2,q:"Stack cài bằng mảng (kích thước 10), ban đầu top=-1.\nfor(int i=0;i<5;i++) push(i);\nfor(int i=0;i<2;i++) pop();\nGiá trị biến top là:",o:["2","3","4","5"],a:0},
+{p:2,q:"Hàng đợi ưu tiên (min-heap): q = [10,20,30].\nSau lệnh push(15); pop();\nPhần tử ở đầu hàng đợi là:",o:["10","15","20","30"],a:1},
+{p:2,q:"In ra kết quả của f(4,2):\nint f(int n, int k) {\n  if(k==0 || k==n) return 1;\n  return f(n-1,k-1) + f(n-1,k);\n}",o:["4","6","8","10"],a:1},
+{p:2,q:"int a[] = {1,2,3,4,5};\nint *p = a + 4;\ncout << p[-2];\nin ra:",o:["2","3","4","5"],a:1},
+{p:2,q:"Danh sách vòng: 1 → 2 → 3 → (về 1).\nNode* p = head;\nfor(int i=0; i<5; i++) p = p->next;\ncout << p->data;\nIn ra:",o:["1","2","3","Lỗi"],a:2},
+{p:2,q:"Kết quả của ackerman(1,2):\nint ack(int m, int n) {\n  if(m==0) return n+1;\n  if(n==0) return ack(m-1,1);\n  return ack(m-1, ack(m,n-1));\n}",o:["2","3","4","5"],a:2},
+{p:2,q:"Trong Queue cài bằng Linked List có head và tail. Sau khi enqueue(5) vào Queue rỗng, khẳng định nào đúng?",o:["head->data=5; tail=NULL;","head=NULL; tail->data=5;","head->data=5; tail->data=5; (head==tail)","head==tail+1;"],a:2},
+{p:2,q:"Đoạn mã sau in ra gì?\nint v = 10;\nint *p = &v;\nint **pp = &p;\n**pp = 20;\ncout << v;",o:["10","20","Địa chỉ","Lỗi"],a:1},
+{p:2,q:"Kết quả của g(3,2):\nint g(int x, int y) {\n  if(x==0) return y;\n  return g(x-1, x+y);\n}",o:["5","8","9","11"],a:1},
+
+// ── PHẦN 3 ──
+{p:3,q:"Đoạn mã chèn giá trị value vào vị trí k trong mảng a có n phần tử. Dòng lệnh còn thiếu ở ___?\nfor(int i=n; i>k; i--) {\n  ___\n}\na[k] = value;\nn++;",o:["a[i] = a[i+1];","a[i+1] = a[i];","a[i] = a[i-1];","a[i-1] = a[i];"],a:2},
+{p:3,q:"Đoạn mã xóa phần tử tại vị trí k trong mảng a có n phần tử. Dòng lệnh còn thiếu ở ___?\nfor(int i=k; i<n-1; i++) {\n  ___\n}\nn--;",o:["a[i+1] = a[i];","a[i] = a[i+1];","a[i] = a[i-1];","a[i-1] = a[i];"],a:1},
+{p:3,q:"Thêm nút mới vào đầu Linked List đơn. Dòng lệnh còn thiếu ở ___?\nNode* newNode = new Node(value);\n___\nhead = newNode;",o:["head->next = newNode;","newNode->next = head;","newNode = head->next;","head = newNode->next;"],a:1},
+{p:3,q:"Thêm nút mới vào cuối Linked List (chỉ có head). Lệnh nào điền vào ___?\nif(head==NULL) { head=new Node(value); return; }\nNode* p = head;\nwhile(p->next != NULL) p = p->next;\n___",o:["p->next = new Node(value);","p = new Node(value);","newNode->next = p;","p->next = head;"],a:0},
+{p:3,q:"Xóa nút đứng ngay sau nút prev trong Linked List đơn. Dòng lệnh còn thiếu ở ___?\nif(prev==NULL || prev->next==NULL) return;\nNode* temp = prev->next;\n___\ndelete temp;",o:["prev = temp->next;","temp->next = prev->next;","prev->next = temp->next;","prev->next = NULL;"],a:2},
+{p:3,q:"Duyệt và tìm kiếm phần tử key trong Linked List. Biểu thức tiến con trỏ điền vào ___?\nNode* p = head;\nwhile(p != NULL) {\n  if(p->data == key) return p;\n  ___\n}\nreturn NULL;",o:["p++;","p = p->next;","p = head->next;","p->next = NULL;"],a:1},
+{p:3,q:"Push vào Stack cài bằng mảng. Lệnh nào điền vào ___?\nif(top == MAX-1) return; // Stack đầy\n___ = value;",o:["a[top++]","a[++top]","a[top]","a[top--]"],a:1},
+{p:3,q:"Pop từ Stack cài bằng Linked List (đỉnh Stack tại head). Lệnh nào còn thiếu?\nif(head == NULL) return; // Stack rỗng\nNode* temp = head;\n___\ndelete temp;",o:["head = temp;","head = head->next;","head->next = NULL;","temp = head->next;"],a:1},
+{p:3,q:"Cập nhật con trỏ tail khi enqueue vào Queue Mảng vòng. Biểu thức đúng là:\nif(isFull()) return;\ntail = ___ ;\na[tail] = value;",o:["tail + 1","(tail + 1) % MAX","(tail - 1) % MAX","tail % MAX + 1"],a:1},
+{p:3,q:"Cập nhật con trỏ head khi dequeue khỏi Queue Mảng vòng:\nif(isEmpty()) return;\nhead = ___ ;",o:["head + 1","(head + 1) % MAX","head % MAX + 1","(head - 1) % MAX"],a:1},
+{p:3,q:"Trong đệ quy tính n! (giai thừa), điều kiện dừng nào điền vào ___ là chính xác và an toàn nhất?\nint fact(int n) {\n  if(___) return 1;\n  return n * fact(n-1);\n}",o:["n == 1","n == 0","n <= 1","n < 0"],a:2},
+{p:3,q:"Để hoàn thiện đệ quy tính Fibonacci thứ n, biểu thức còn thiếu là gì?\nint fib(int n) {\n  if(n<=1) return 1;\n  return ___ ;\n}",o:["fib(n-1) + fib(n-2)","n + fib(n-1)","fib(n/2) + fib(n/2)","n * fib(n-1)"],a:0},
+{p:3,q:"Thuật toán Tìm kiếm nhị phân (Iterative). Nếu a[mid] < key, ta dịch chuyển con trỏ nào?\nwhile(left <= right) {\n  int mid = (left+right)/2;\n  if(a[mid]==key) return mid;\n  else if(a[mid]<key) ___\n  else right = mid-1;\n}",o:["right = mid;","left = mid;","right = mid + 1;","left = mid + 1;"],a:3},
+{p:3,q:"Tìm kiếm nhị phân (Recursive). Lời gọi đệ quy khi tìm nửa TRÁI của mảng?\nint BS(int a[], int key, int left, int right) {\n  if(left > right) return -1;\n  int mid = (left+right)/2;\n  if(a[mid]==key) return mid;\n  if(a[mid]>key) return BS(a, key, ___ );\n  return BS(a, key, mid+1, right);\n}",o:["left, mid","mid, right","left, mid-1","mid-1, right"],a:2},
+{p:3,q:"Trong Insertion Sort, điều kiện nào bị thiếu trong vòng lặp while?\nfor(int i=1; i<n; i++) {\n  int cur = a[i];\n  int j = i-1;\n  while(j>=0 && ___ ) {\n    a[j+1] = a[j];\n    j--;\n  }\n  a[j+1] = cur;\n}",o:["a[j] < cur","a[j] > cur","a[j] == cur","a[i] > a[j]"],a:1},
+{p:3,q:"Thêm nút mới vào đầu Danh sách móc nối kép (DLL). Đoạn lệnh còn thiếu ở ___?\nNode* newNode = new Node(value);\nnewNode->next = head;\nif(head != NULL) ___\nhead = newNode;",o:["head->next = newNode;","newNode->prev = head;","head->prev = newNode;","head = newNode->prev;"],a:2},
+{p:3,q:"Thêm một nút vào cuối Queue cài bằng Linked List có con trỏ tail. Lệnh nào bị thiếu?\nNode* newNode = new Node(value);\nif(tail==NULL) { head=tail=newNode; return; }\n___\ntail = newNode;",o:["newNode->next = tail;","tail->next = newNode;","head->next = newNode;","newNode->next = head;"],a:1},
+{p:3,q:"Hoàn thiện hàm đệ quy tính tổng mảng a có kích thước n.\nint sum(int a[], int n) {\n  if(n==0) return 0;\n  return ___ + sum(a, n-1);\n}",o:["a[n]","a[n-1]","a[0]","n"],a:1},
+{p:3,q:"Trong thao tác xóa nút curr bất kỳ trên DLL, để nối nút phía sau với nút phía trước:\nif(curr->prev != NULL) curr->prev->next = curr->next;\nif(curr->next != NULL) ___\ndelete curr;",o:["curr->next->prev = curr->prev;","curr->prev->next = curr->prev;","curr->next->next = curr->prev;","curr->next = curr->prev;"],a:0},
+{p:3,q:"Hoàn thiện hàm đệ quy Tháp Hà Nội. Lời gọi đệ quy thứ hai là gì?\nvoid Hanoi(int n, char src, char aux, char dest) {\n  if(n==1) { cout<<src<<\"->\"<<dest; return; }\n  Hanoi(n-1, src, dest, aux);\n  cout << src << \"->\" << dest;\n  ___\n}",o:["Hanoi(n-1, src, aux, dest);","Hanoi(n-1, aux, dest, src);","Hanoi(n-1, dest, src, aux);","Hanoi(n-1, aux, src, dest);"],a:3},
+{p:3,q:"Thuật toán Tìm kiếm tuần tự. Lệnh nào còn thiếu ở ___?\nint linearSearch(int a[], int n, int value) {\n  for(int i=0; i<n; i++) {\n    if(___) return i;\n  }\n  return -1;\n}",o:["a[i] == value","a[i] = value","i == value","a[n] == value"],a:0},
+{p:3,q:"Thuật toán Euclid tìm GCD. Điều kiện dừng trả về giá trị nào?\nint gcd(int a, int b) {\n  if(b == 0) return ___;\n  return gcd(b, a%b);\n}",o:["0","1","a","b"],a:2},
+{p:3,q:"Trong Selection Sort, biểu thức so sánh nào bị thiếu?\nfor(int i=0; i<n-1; i++) {\n  int min_idx = i;\n  for(int j=i+1; j<n; j++) {\n    if(___) min_idx = j;\n  }\n  swap(a[i], a[min_idx]);\n}",o:["a[j] < a[min_idx]","a[j] > a[min_idx]","a[i] < a[j]","a[i] > a[min_idx]"],a:0},
+{p:3,q:"Đảo ngược Linked List đơn. Lệnh gán nào bị thiếu tại ___?\nNode* prev = NULL;\nNode* curr = head;\nNode* next = NULL;\nwhile(curr != NULL) {\n  next = curr->next;\n  ___ ;\n  prev = curr;\n  curr = next;\n}\nhead = prev;",o:["prev->next = curr","curr->next = prev","curr->next = next","next->next = prev"],a:1},
+{p:3,q:"In toàn bộ phần tử Queue mà không làm mất dữ liệu. Lệnh nào điền vào ___?\nint s = q.size();\nfor(int i=0; i<s; i++) {\n  int x = q.front();\n  cout << x << \" \";\n  ___ ;\n}",o:["q.pop(); q.push(x);","q.push(x); q.pop();","q.pop();","q.push(q.front());"],a:0},
+{p:3,q:"Tìm nút chính giữa Linked List bằng kỹ thuật 'Con trỏ Nhanh - Chậm'. Bước nhảy của fast là:\nNode* slow = head;\nNode* fast = head;\nwhile(fast!=NULL && fast->next!=NULL) {\n  slow = slow->next;\n  ___ ;\n}\nreturn slow;",o:["fast = fast->next","fast = fast->next->next","slow = fast->next","fast = slow->next"],a:1},
+{p:3,q:"Dùng Stack kiểm tra dấu ngoặc hợp lệ. Khi gặp ')' cần kiểm tra điều kiện gì trước pop()?\nif(c == ')') {\n  if(___) return false;\n  st.pop();\n}",o:["st.empty()","st.top() == '('","st.empty() || st.top() != '('","st.empty() && st.top() == '('"],a:2},
+{p:3,q:"Lũy thừa nhị phân (Fast Exponentiation). Nếu n là số chẵn, hàm trả về kết quả nào?\nint power(int a, int n) {\n  if(n==0) return 1;\n  int half = power(a, n/2);\n  if(n%2==0) return ___ ;\n  else return half*half*a;\n}",o:["half * 2","half * half","a * half","half + half"],a:1},
+{p:3,q:"Xóa tất cả nút có giá trị bằng x trong Linked List (dùng dummy node). Lệnh điền vào ___:\nNode* curr = dummy;\nwhile(curr->next != NULL) {\n  if(curr->next->data == x) {\n    Node* temp = curr->next;\n    ___ ;\n    delete temp;\n  } else {\n    curr = curr->next;\n  }\n}",o:["curr->next = temp->next","curr->next = curr","curr = temp->next","temp->next = curr"],a:0},
+{p:3,q:"Hoàn thiện hàm đệ quy Chia để trị tính tổng mảng từ chỉ số l đến r.\nint sumArray(int a[], int l, int r) {\n  if(l==r) return a[l];\n  int mid = (l+r)/2;\n  return ___ ;\n}",o:["sumArray(a,l,mid) + sumArray(a,mid+1,r)","sumArray(a,l,mid-1) + sumArray(a,mid+1,r)","sumArray(a,l,mid) + sumArray(a,mid,r)","sumArray(a,mid,r)"],a:0},
+
+// ── PHẦN 4 ──
+{p:4,q:"Đoạn mã sau có lỗi gì?\nint x = 10\ncout << x;",o:["Lỗi cú pháp (Thiếu dấu chấm phẩy)","Không có lỗi","Lặp vô hạn","Lỗi khai báo biến"],a:0},
+{p:4,q:"Đoạn chương trình sau sẽ gặp vấn đề gì khi chạy?\nint i = 0;\nwhile(i < 5) {\n  cout << i;\n}",o:["Lỗi cú pháp","Lỗi thực thi (Runtime)","Lặp vô hạn","Không có lỗi"],a:2},
+{p:4,q:"Đoạn mã vòng lặp for này có hợp lệ không?\nint a[5] = {1,2,3,4,5};\nfor(int i=0, i<5, i++) cout << a[i];",o:["Không có lỗi","Lỗi cú pháp (Sai dấu phân tách, phải dùng ; thay vì ,)","Lặp vô hạn","Lỗi tràn mảng"],a:1},
+{p:4,q:"Hàm đệ quy sau có lỗi gì?\nint sum(int n) {\n  if(n==0) return 0;\n  return n + sum(n);\n}",o:["Lỗi cú pháp","Lỗi kiểu trả về","Đệ quy vô hạn (gọi sum(n) thay vì sum(n-1))","Không có lỗi"],a:2},
+{p:4,q:"Khai báo Ngăn xếp sau trong C++ STL mắc lỗi gì?\nstack s;\ns.push(10);",o:["Lỗi cú pháp (Thiếu kiểu dữ liệu <int>)","Không có lỗi","Lỗi chưa khởi tạo","Hàm push sai"],a:0},
+{p:4,q:"Lỗi trong cách khởi tạo mảng sau là gì?\nint a[3] = (1, 2, 3);",o:["Lỗi cú pháp (Sai ngoặc, phải dùng {})","Không có lỗi","Thiếu kích thước","Dư phần tử"],a:0},
+{p:4,q:"Đoạn mã sử dụng con trỏ này gặp lỗi gì?\nNode* p = new Node(5);\ndelete p;\ncout << p->data;",o:["Lỗi cú pháp","Không có lỗi","Lặp vô hạn","Lỗi thực thi (Truy cập bộ nhớ đã giải phóng)"],a:3},
+{p:4,q:"Hàm sau có biên dịch được không?\nint f(int n) {\n  if(n<=1) return 1\n  return f(n-1) + f(n-2);\n}",o:["Lỗi cú pháp (Thiếu ; sau return 1)","Không có lỗi","Lỗi logic","Đệ quy vô hạn"],a:0},
+{p:4,q:"Vấn đề của vòng lặp while sau là gì?\nint i = 1;\nwhile(i = 5) {\n  cout << i;\n}",o:["Lỗi cú pháp","Không có lỗi","Lặp vô hạn (gán i=5, luôn true)","Lỗi biên dịch do gán"],a:2},
+{p:4,q:"Định nghĩa cấu trúc Node sau thiếu sót gì?\nstruct Node {\n  int data;\n  Node* next;\n}",o:["Lỗi cú pháp (Thiếu ; sau dấu })","Lỗi cú pháp (Thiếu ())","Không có lỗi","Thiếu private"],a:0},
+{p:4,q:"Thao tác với Hàng đợi (Queue) sau có đúng không?\nqueue<int> q;\nq.push(1, 2);",o:["Lỗi cú pháp (push() chỉ nhận 1 tham số)","Không có lỗi","Lỗi thực thi","Queue không có push"],a:0},
+{p:4,q:"Đoạn mã truy xuất mảng sau tiềm ẩn rủi ro gì?\nint a[] = {1, 2, 3};\ncout << a[3];",o:["Lỗi cú pháp","Không có lỗi","Lặp vô hạn","Lỗi logic/Lỗi thực thi (Tràn biên – chỉ số vượt giới hạn)"],a:3},
+{p:4,q:"Lỗi của hàm sau nằm ở đâu?\nvoid print(int n) {\n  if(n==0) return 0;\n  cout << n;\n}",o:["Không có lỗi","Lỗi cú pháp (hàm void nhưng return giá trị 0)","Thiếu lệnh return cuối","Đệ quy vô hạn"],a:1},
+{p:4,q:"Vòng lặp sau sẽ hoạt động như thế nào?\nfor(int i=10; i>0; i++) {\n  cout << i;\n}",o:["Lỗi cú pháp","In từ 10 đến 1","Lặp vô hạn (i++ làm i tăng mãi, không bao giờ ≤ 0)","Không chạy lần nào"],a:2},
+{p:4,q:"Gán giá trị cho con trỏ như sau có đúng không?\nint a = 5;\nint *p = a;",o:["Lỗi cú pháp (Thiếu & – phải là &a)","Lỗi cú pháp (Thiếu *)","Không có lỗi","Lỗi thực thi"],a:0},
+{p:4,q:"Cú pháp toán tử trong lệnh if sau đúng hay sai?\nint x = 10;\nif(x <> 0) cout << x;",o:["Lỗi cú pháp (Toán tử <> không tồn tại trong C++, phải dùng !=)","Không có lỗi","Lỗi logic","Báo lỗi thực thi"],a:0},
+{p:4,q:"Trong C++ STL, thao tác gán pop() cho biến có hợp lệ không?\nstack<int> st;\nst.push(5);\nint x = st.pop();",o:["Không có lỗi","Lỗi cú pháp (pop() trả về void, không thể gán)","Lỗi thực thi (Stack rỗng)","Cú pháp đúng nhưng x = 0"],a:1},
+{p:4,q:"Hàm đệ quy này gặp sự cố gì?\nint f(int n) {\n  return f(n-1);\n}",o:["Lỗi cú pháp","Không có lỗi","Đệ quy vô hạn (Thiếu Base case)","Trả về 0"],a:2},
+{p:4,q:"Đoạn mã sau có lỗi gì?\nint a[5] = {0};\nfor(int i=0; i<5; i++);  // dấu ; thừa!\n{\n  a[i] = i;\n}",o:["Lỗi cú pháp (dấu ; thừa khiến i không tồn tại trong khối {})","Không có lỗi","Lỗi thực thi (Tràn mảng)","Lặp vô hạn"],a:0},
+{p:4,q:"Đoạn mã sau có dừng lại không?\nint n = 3;\nwhile(n > 0) {\n  n = n % 2;\n}",o:["Không có lỗi, dừng đúng","Lỗi cú pháp","Lặp vô hạn (n→1→1→1...khi n=1, 1%2=1, không bao giờ về 0)","Lỗi chia cho 0"],a:2},
+{p:4,q:"Khởi tạo một Nút (Node) bằng new như sau có đúng không?\nNode p = new Node(10);",o:["Lỗi cú pháp (Cần khai báo con trỏ: Node* p)","Không có lỗi","Lỗi thực thi","Dư từ khóa new"],a:0},
+{p:4,q:"Khai báo mảng sau có hợp lệ trong C++ không?\nint a[];\na[0] = 1;",o:["Lỗi cú pháp (Mảng thiếu kích thước và không có khởi tạo)","Không có lỗi","Lặp vô hạn","Mảng tự động mở rộng"],a:0},
+{p:4,q:"Định nghĩa hàm sau thiếu sót điều gì?\nint sum(int a, int b)\nreturn a + b;",o:["Không có lỗi","Lỗi cú pháp (Thiếu ngoặc {} bao thân hàm)","Thiếu khai báo biến","Lỗi logic"],a:1},
+{p:4,q:"Phương thức thêm vào Queue sau có chuẩn xác trong C++ STL không?\nqueue<int> q;\nq.enqueue(5);",o:["Lỗi cú pháp (Hàm enqueue không tồn tại, phải dùng push)","Không có lỗi","Lỗi thực thi","Queue không hỗ trợ số nguyên"],a:0},
+{p:4,q:"Đoạn mã vòng lặp do...while sau có lỗi gì không?\nint n = 5;\ndo {\n  cout << n;\n} while(n-- > 0);",o:["Lỗi cú pháp","Lặp vô hạn","Lỗi thực thi","Không có lỗi (Hoạt động đúng)"],a:3},
+{p:4,q:"Khai báo biến trong khối lệnh sau có vấn đề gì?\nfor(int i=0; i<5; i++)\n  int x = i * 2;\ncout << x;",o:["Không có lỗi","Lỗi cú pháp (x không tồn tại ở dòng cout – ngoài phạm vi)","Lặp vô hạn","Lỗi logic"],a:1},
+{p:4,q:"Lỗi khi thao tác với con trỏ NULL là gì?\nint *p = NULL;\ncout << *p;",o:["Lỗi cú pháp","Lỗi tràn bộ nhớ","Lặp vô hạn","Lỗi thực thi (Dereference con trỏ NULL – Segmentation Fault)"],a:3},
+{p:4,q:"Hàm đệ quy tính giai thừa sau mắc lỗi gì?\nint fact(int n) {\n  if(n<=1) return 1;\n  return n * Fact(n-1);\n}",o:["Lỗi cú pháp (Hàm Fact chưa khai báo – sai hoa/thường)","Không có lỗi","Đệ quy vô hạn","Lỗi kiểu trả về"],a:0},
+{p:4,q:"Phép tính sau tiềm ẩn nguy cơ gì?\nint x = 10, y = 0;\nint z = x / y;",o:["Lỗi cú pháp","Không có lỗi","Lặp vô hạn","Lỗi thực thi (Chia cho 0)"],a:3},
+{p:4,q:"Đoạn mã hàm sau gặp vấn đề gì?\nbool check(int x) {\n  if(x > 0) return true;\n  else if(x < 0) return false;\n}",o:["Lỗi cú pháp (Sai kiểu)","Cảnh báo/Lỗi logic (Thiếu return khi x = 0)","Lặp vô hạn","Không có lỗi"],a:1},
+
+// ── PHẦN 5 ──
+{p:5,q:"Trong bài toán Tháp Hà Nội, quy tắc nào sau đây là bắt buộc và quan trọng nhất?",o:["Chỉ được di chuyển mỗi lần 1 đĩa và đĩa lớn không bao giờ được đặt lên trên đĩa nhỏ.","Có thể di chuyển nhiều đĩa cùng lúc nếu đã sắp xếp đúng thứ tự.","Đĩa lớn nhất phải luôn nằm ở cọc nguồn cho đến bước cuối cùng.","Không được phép sử dụng cọc trung gian quá 2 lần cho mỗi đĩa."],a:0},
+{p:5,q:"Công thức tổng quát tính số bước di chuyển tối thiểu để chuyển n đĩa trong bài toán Tháp Hà Nội là:",o:["n² - 1","2ⁿ - 1","2n + 1","n·log₂n"],a:1},
+{p:5,q:"Gọi T(n) là số bước di chuyển tối thiểu cho n đĩa. Hệ thức truy hồi đúng là:",o:["T(n) = T(n-1) + n","T(n) = 2T(n-1) + 1","T(n) = 2T(n/2) + 1","T(n) = T(n-1) + 2"],a:1},
+{p:5,q:"Độ phức tạp thời gian (Time Complexity) của thuật toán đệ quy Tháp Hà Nội thuộc lớp hàm nào?",o:["O(n²)","O(n log n)","O(2ⁿ)","O(n!)"],a:2},
+{p:5,q:"Độ phức tạp không gian (Space Complexity – Call Stack) của thuật toán đệ quy Tháp Hà Nội cho n đĩa là:",o:["O(1)","O(log n)","O(n)","O(2ⁿ)"],a:2},
+{p:5,q:"Giải bài toán Tháp Hà Nội với n = 5 đĩa. Số bước di chuyển tối thiểu mà thuật toán thực hiện là:",o:["15","31","63","32"],a:1},
+{p:5,q:"Trong hàm Hanoi(n, A, B, C) (chuyển n đĩa từ A sang C, dùng B làm trung gian). Để dời đĩa lớn nhất từ A sang C, lời gọi đệ quy ngay TRƯỚC đó là gì?",o:["Hanoi(n-1, A, C, B)","Hanoi(n-1, B, A, C)","Hanoi(n-1, A, B, C)","Hanoi(n, A, C, B)"],a:0},
+{p:5,q:"Giải Tháp Hà Nội n=3 đĩa: chuyển từ cọc A sang cọc C, cọc B là trung gian.\nNgay trước khi dời đĩa 3 (lớn nhất) từ A sang C, đĩa 1 và đĩa 2 đang nằm ở đâu?",o:["Đĩa 1 ở B, đĩa 2 ở C","Cả hai đĩa 1 và 2 đều ở cọc C","Cả hai đĩa 1 và 2 đều ở cọc B","Đĩa 1 ở C, đĩa 2 ở B"],a:2},
+{p:5,q:"Điểm cốt lõi của chiến lược 'Chia để trị' trong bài toán Tháp Hà Nội với n đĩa là gì?",o:["Chia n đĩa thành 2 nửa n/2 bằng nhau để giải song song.","Chuyển n-1 đĩa sang cọc trung gian, chuyển đĩa lớn nhất sang đích, rồi chuyển n-1 đĩa về đích.","Tìm cách xếp ngẫu nhiên các đĩa nhỏ cho đến khi lộ ra đĩa lớn nhất.","Dùng vòng lặp for để dời tuần tự từng đĩa từ bé đến lớn."],a:1},
+{p:5,q:"Theo truyền thuyết Tháp Brahma, các nhà sư phải chuyển 64 đĩa vàng. Nếu mỗi giây chuyển 1 đĩa, thời gian hoàn thành xấp xỉ bằng bao nhiêu?",o:["Khoảng vài giờ đồng hồ","Khoảng 64 ngày","Khoảng 584 tỷ năm","Không thể xác định vì đệ quy vô hạn"],a:2},
+
+// ── PHẦN 6 ──
+{p:6,q:"Một thuật toán tốt cần phải thoả mãn những tiêu chí cơ bản nào?",o:["Chỉ cần tính hữu hạn (dừng sau hữu hạn bước).","Chỉ cần tính chính xác (luôn cho kết quả đúng).","Chỉ cần tính rõ ràng (các bước không gây nhầm lẫn).","Cả 3 tiêu chí: Hữu hạn, Chính xác và Rõ ràng."],a:3},
+{p:6,q:"Kiểu dữ liệu trừu tượng (Abstract Data Type - ADT) được định nghĩa là gì?",o:["Là một kiểu dữ liệu do ngôn ngữ lập trình cung cấp sẵn (như int, float).","Là mã nguồn chi tiết cài đặt của một cấu trúc dữ liệu.","Là mô hình toán học gồm tập giá trị và các phép toán, không phụ thuộc cài đặt.","Là một mảng các đối tượng trong bộ nhớ."],a:2},
+{p:6,q:"Độ phức tạp không gian (Space Complexity) của thuật toán đo lường yếu tố nào?",o:["Số lượng dòng code của chương trình.","Lượng bộ nhớ (RAM) mà thuật toán yêu cầu trong quá trình thực thi.","Dung lượng ổ cứng để lưu mã nguồn.","Thời gian chạy trên bộ nhớ ảo."],a:1},
+{p:6,q:"Tại sao trong phân tích độ phức tạp tiệm cận (Big-Oh), ta thường bỏ qua các hệ số hằng (vd: O(3n) → O(n))?",o:["Vì máy tính hiện đại xử lý các phép nhân hằng số rất nhanh.","Vì hằng số không bao giờ thay đổi.","Vì hằng số không có ý nghĩa trong toán học.","Vì khi n→∞, bậc của n quyết định tốc độ tăng; hằng số không thay đổi bản chất."],a:3},
+{p:6,q:"Độ phức tạp 'Trường hợp trung bình' (Average Case) thường được đánh giá bằng cách nào?",o:["Chạy thử 100 lần và chia trung bình thời gian.","Tính kỳ vọng toán học của thời gian chạy dựa trên xác suất của mọi đầu vào.","Lấy trung bình cộng của Best-case và Worst-case.","Đo trên một bộ dữ liệu ngẫu nhiên bất kỳ."],a:1},
+{p:6,q:"Mảng (Array) có ưu điểm gì vượt trội nhất so với Danh sách móc nối (Linked List)?",o:["Dễ dàng thay đổi kích thước trong quá trình chạy.","Thêm và xóa phần tử ở giữa cấu trúc rất nhanh.","Không lãng phí bộ nhớ.","Cho phép truy cập ngẫu nhiên phần tử thứ k trong O(1)."],a:3},
+{p:6,q:"Nhược điểm lớn nhất của Mảng tĩnh (Static Array) là gì?",o:["Truy xuất phần tử chậm.","Chỉ lưu trữ được kiểu dữ liệu số nguyên.","Kích thước cố định, phải khai báo trước và khó thay đổi linh hoạt.","Tốn nhiều bộ nhớ cho các con trỏ liên kết."],a:2},
+{p:6,q:"Danh sách móc nối đơn (Singly Linked List) quản lý bộ nhớ như thế nào?",o:["Cấp phát một khối bộ nhớ liên tục duy nhất.","Sử dụng bộ nhớ ảo của hệ điều hành.","Cấp phát động, các nút rải rác trong RAM và liên kết bằng con trỏ.","Mỗi nút được lưu trữ trong một tệp riêng biệt."],a:2},
+{p:6,q:"Trong Danh sách móc nối kép (Doubly Linked List), mỗi nút chứa tối thiểu bao nhiêu thành phần?",o:["2 (dữ liệu và con trỏ next).","3 (dữ liệu, con trỏ tới nút trước, con trỏ tới nút sau).","1 (chỉ chứa dữ liệu).","4 (dữ liệu, 2 con trỏ, và chỉ số thứ tự)."],a:1},
+{p:6,q:"Việc sử dụng Nút giả (Dummy Node / Sentinel Node) ở đầu Linked List mang lại lợi ích gì?",o:["Giúp giảm dung lượng bộ nhớ.","Giúp mã nguồn ngắn gọn, tránh lỗi bằng cách loại bỏ các trường hợp biên đặc biệt (chèn/xóa ở đầu).","Tăng tốc độ tìm kiếm phần tử.","Tự động sắp xếp danh sách."],a:1},
+{p:6,q:"Cấu trúc dữ liệu nào phù hợp nhất để cài đặt tính năng 'Undo/Redo' (Hoàn tác/Làm lại)?",o:["Hàng đợi (Queue).","Ngăn xếp (Stack).","Mảng (Array).","Danh sách móc nối vòng."],a:1},
+{p:6,q:"Trình duyệt web sử dụng cấu trúc dữ liệu nào để lưu lịch sử trang (nút Back/Forward)?",o:["Ngăn xếp (Stack).","Hàng đợi (Queue).","Đồ thị (Graph).","Hàng đợi ưu tiên (Priority Queue)."],a:0},
+{p:6,q:"Hàng đợi (Queue) thường được ứng dụng trong trường hợp nào dưới đây?",o:["Quản lý bộ đệm máy in (Printer Spooler) và lập lịch tiến trình CPU.","Duyệt đồ thị theo chiều sâu (DFS).","Tính toán biểu thức hậu tố (Postfix).","Thực hiện đệ quy."],a:0},
+{p:6,q:"Hiện tượng 'Stack Overflow' thường xảy ra do nguyên nhân nào?",o:["Sử dụng quá nhiều lệnh if-else lồng nhau.","Khai báo mảng động bằng new quá nhiều.","Hàm đệ quy gọi lồng nhau quá sâu hoặc không có điểm dừng, làm cạn kiệt bộ nhớ Call Stack.","Truy cập vào chỉ số mảng nằm ngoài giới hạn."],a:2},
+{p:6,q:"Hàng đợi vòng (Circular Queue) ra đời nhằm khắc phục nhược điểm nào của mảng tuyến tính thông thường?",o:["Sức chứa quá nhỏ.","Chậm trong việc tìm kiếm.","Không thể lưu các đối tượng phức tạp.","Hiện tượng 'dịch chuyển giả' – lãng phí ô nhớ bị bỏ trống ở đầu sau khi dequeue."],a:3},
+{p:6,q:"Cấu trúc dữ liệu Deque (Double-Ended Queue) cho phép thao tác gì?",o:["Thêm và lấy phần tử ra ở cả hai đầu.","Chỉ thêm ở hai đầu nhưng chỉ lấy ra ở một đầu.","Chỉ lấy ở hai đầu nhưng chỉ thêm ở một đầu.","Phân chia thành 2 hàng đợi độc lập."],a:0},
+{p:6,q:"Nguyên lý hoạt động LIFO (Vào sau ra trước) của Stack tương đương với hành động thực tế nào?",o:["Xếp hàng mua vé xem phim.","Lấy số thứ tự ở ngân hàng.","Xếp chồng các đĩa lên nhau và lấy đĩa ra từ trên cùng.","Đi vào đường hầm một chiều."],a:2},
+{p:6,q:"Trong quá trình thực thi hàm đệ quy, 'Call Stack' làm nhiệm vụ gì?",o:["Lưu trữ tham số, biến cục bộ và địa chỉ trả về của mỗi lần gọi hàm.","Tự động dịch mã nguồn sang ngôn ngữ máy.","Lưu trữ toàn bộ dữ liệu ổ cứng.","Xóa các biến không sử dụng (Garbage Collection)."],a:0},
+{p:6,q:"Đệ quy đuôi (Tail Recursion) có lợi ích gì đặc biệt so với đệ quy thông thường?",o:["Giúp hàm trả về nhiều giá trị cùng lúc.","Cú pháp viết code ngắn hơn 10 lần.","Trình biên dịch có thể tối ưu hóa thành vòng lặp, tránh phình to Call Stack.","Tự động sắp xếp dữ liệu truyền vào."],a:2},
+{p:6,q:"Khẳng định nào sau đây ĐÚNG khi so sánh Đệ quy và Vòng lặp?",o:["Đệ quy luôn thực thi nhanh hơn vòng lặp.","Vòng lặp code luôn ngắn gọn và dễ hiểu hơn đệ quy.","Đệ quy thường tiêu tốn nhiều bộ nhớ hơn vòng lặp do chi phí duy trì Call Stack.","Vòng lặp có thể gây tràn bộ nhớ Stack, còn đệ quy thì không."],a:2},
+{p:6,q:"Điều gì sẽ xảy ra nếu một hàm đệ quy được viết mà thiếu 'Điều kiện dừng' (Base case)?",o:["Chương trình sẽ bỏ qua hàm đó và chạy tiếp.","Hàm sẽ gọi lặp lại vô hạn cho đến khi crash do Stack Overflow.","Hàm sẽ trả về giá trị 0.","Trình biên dịch sẽ tự động thêm điều kiện dừng."],a:1},
+{p:6,q:"Chiến lược giải thuật 'Chia để trị' (Divide and Conquer) thường được triển khai bằng công cụ nào?",o:["Đệ quy (Recursion).","Hàng đợi (Queue).","Mảng vòng (Circular Array).","Cấu trúc switch-case."],a:0},
+{p:6,q:"Thuật toán Tìm kiếm tuần tự (Linear Search) có ưu điểm gì so với Tìm kiếm nhị phân?",o:["Có thể áp dụng ngay trên mảng dữ liệu lộn xộn chưa được sắp xếp.","Luôn chạy nhanh hơn với mọi kích thước mảng.","Độ phức tạp là O(log n).","Sử dụng ít biến cục bộ hơn."],a:0},
+{p:6,q:"Cấu trúc dữ liệu Hàng đợi ưu tiên (Priority Queue) khác với Queue chuẩn ở điểm cốt lõi nào?",o:["Chỉ cho phép lưu số nguyên dương.","Cho phép truy cập ngẫu nhiên bất kỳ vị trí nào.","Phần tử được lấy ra là phần tử có độ ưu tiên cao nhất, bất kể thêm vào lúc nào.","Tuân thủ nghiêm ngặt nguyên lý LIFO thay vì FIFO."],a:2},
+{p:6,q:"Khi tra cứu từ điển tiếng Anh (đã sắp xếp theo bảng chữ cái), con người vô thức sử dụng chiến lược nào?",o:["Tìm kiếm tuần tự.","Tìm kiếm nhị phân.","Duyệt đồ thị theo chiều rộng (BFS).","Quy hoạch động."],a:1},
+{p:6,q:"Khái niệm 'Đánh đổi Không gian - Thời gian' (Space-Time Tradeoff) có ý nghĩa gì?",o:["Không gian vũ trụ và thời gian bị bóp méo.","Không thể tối ưu cả hai cùng lúc.","Không gian bộ nhớ và thời gian chạy là hai đại lượng bằng nhau.","Thường có thể tăng tốc bằng cách dùng thêm bộ nhớ, hoặc tiết kiệm bộ nhớ nhưng chậm hơn."],a:3},
+{p:6,q:"Hàm băm (Hash Function) cơ bản có chức năng biến đổi khóa (Key) thành dạng dữ liệu nào?",o:["Một chuỗi ký tự mã hóa RSA.","Một chỉ số (Index) nguyên để truy cập trực tiếp vào Mảng (bảng băm).","Một cây nhị phân tìm kiếm.","Một danh sách móc nối."],a:1},
+{p:6,q:"Trong Danh sách móc nối vòng (Circular Linked List), để duyệt toàn bộ một vòng và dừng đúng lúc, điều kiện dừng của vòng lặp while là gì?",o:["Con trỏ chạy đến khi trỏ lại đúng nút khởi điểm ban đầu (p == head).","Con trỏ trỏ tới NULL.","Chạy đúng n lần.","Con trỏ chạm đến nút có giá trị bằng 0."],a:0},
+{p:6,q:"Khái niệm Đệ quy đa tuyến (Tree Recursion / Multiple Recursion) là gì?",o:["Trong thân hàm có từ 2 lời gọi đệ quy trở lên (vd: fib(n)=fib(n-1)+fib(n-2)).","Là hàm đệ quy dùng để vẽ hình cái cây.","Là hai hàm gọi chéo lẫn nhau.","Là hàm đệ quy không có điểm dừng."],a:0},
+{p:6,q:"Khẳng định nào sau đây là SAI khi nói về Cấu trúc dữ liệu và Giải thuật?",o:["Cấu trúc dữ liệu là cách lưu trữ và tổ chức dữ liệu trong máy tính.","Giải thuật là các bước thao tác logic trên Cấu trúc dữ liệu đó.","Một giải thuật thiết kế tốt sẽ luôn chạy rất nhanh, bất kể Cấu trúc dữ liệu nền tảng có tồi đến mức nào.","Lựa chọn đúng Cấu trúc dữ liệu có thể làm giảm đáng kể độ phức tạp của thuật toán."],a:2},
+];
+
+// count per part
+PARTS.forEach(pt => pt.count = Q.filter(q=>q.p===pt.id).length);
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let selectedParts = new Set([1,2,3,4,5,6]);
+let questions = [];
+let idx = 0;
+let answers = [];  // per question: null | {chosen, correct}
+let history = {};  // localStorage-like: qIndex→ answered correctly?
+
+// ═══════════════════════════════════════════════════════
+// HOME
+// ═══════════════════════════════════════════════════════
+function renderParts() {
+  const g = document.getElementById('parts-grid');
+  g.innerHTML = '';
+  PARTS.forEach(pt => {
+    const d = document.createElement('div');
+    d.className = 'part-card' + (selectedParts.has(pt.id) ? ' selected' : '');
+    d.onclick = () => togglePart(pt.id, d);
+    d.innerHTML = `<div class="part-num" style="color:${pt.color}">Phần ${pt.id}</div>
+      <div class="part-title">${pt.name}</div>
+      <div class="part-count">${pt.count} câu hỏi</div>`;
+    g.appendChild(d);
+  });
+}
+
+function togglePart(id, el) {
+  if (selectedParts.has(id)) { selectedParts.delete(id); el.classList.remove('selected'); }
+  else { selectedParts.add(id); el.classList.add('selected'); }
+}
+
+function toggleAll() {
+  if (selectedParts.size === PARTS.length) { selectedParts.clear(); }
+  else { PARTS.forEach(p => selectedParts.add(p.id)); }
+  renderParts();
+}
+
+function startQuiz() {
+  if (selectedParts.size === 0) { alert('Hãy chọn ít nhất một phần!'); return; }
+  questions = Q.filter(q => selectedParts.has(q.p));
+  if (document.getElementById('opt-shuffle').checked) shuffle(questions);
+  answers = new Array(questions.length).fill(null);
+  idx = 0;
+  renderQuizMap();
+  renderQuestion();
+  show('screen-quiz');
+}
+
+function shuffle(arr) {
+  for (let i=arr.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+}
+
+// ═══════════════════════════════════════════════════════
+// QUIZ
+// ═══════════════════════════════════════════════════════
+const LABELS = ['A','B','C','D'];
+
+function renderQuestion() {
+  const q = questions[idx];
+  const total = questions.length;
+  const pInfo = PARTS.find(p=>p.id===q.p);
+  
+  document.getElementById('quiz-part-tag').textContent = pInfo.short;
+  document.getElementById('quiz-part-tag').style.color = pInfo.color;
+  document.getElementById('quiz-part-tag').style.borderColor = pInfo.color.replace(')',',0.3)').replace('rgb','rgba');
+  document.getElementById('quiz-pbar').style.width = ((idx+1)/total*100)+'%';
+  document.getElementById('quiz-counter').textContent = `${idx+1} / ${total}`;
+  document.getElementById('q-num').textContent = `Câu ${idx+1} · ${pInfo.name}`;
+  document.getElementById('hdr-score').style.display='flex';
+  
+  const correct = answers.filter(a=>a&&a.correct).length;
+  document.getElementById('hdr-score').textContent = `✓ ${correct}/${answers.filter(a=>a).length}`;
+  
+  // render question text
+  const qt = document.getElementById('q-text');
+  const parts = q.q.split('\n');
+  let html = '';
+  let inCode = false;
+  let codeLines = [];
+  parts.forEach(line => {
+    const isCode = line.startsWith('  ') || /^(int|void|for|while|if|return|Node|stack|queue|cout|string|bool|char|struct|auto|new|delete|static)/.test(line.trim()) || line.trim().startsWith('//') || line.trim().startsWith('}') || line.trim().startsWith('{');
+    if (isCode) { codeLines.push(line); inCode = true; }
+    else {
+      if (inCode && codeLines.length > 0) { html += `<span class="code-block">${esc(codeLines.join('\n'))}</span>`; codeLines=[]; inCode=false; }
+      html += `<span>${esc(line)}</span>\n`;
+    }
+  });
+  if (codeLines.length > 0) html += `<span class="code-block">${esc(codeLines.join('\n'))}</span>`;
+  qt.innerHTML = html;
+  
+  // options
+  const opts = document.getElementById('options');
+  opts.innerHTML = '';
+  const ans = answers[idx];
+  q.o.forEach((text, i) => {
+    const d = document.createElement('div');
+    d.className = 'opt';
+    if (ans) {
+      d.classList.add('disabled');
+      if (i === q.a) d.classList.add('show-correct');
+      if (i === ans.chosen && ans.chosen !== q.a) d.classList.add('wrong');
+      if (i === ans.chosen && ans.chosen === q.a) d.classList.add('correct');
+    }
+    d.innerHTML = `<span class="opt-label">${LABELS[i]}</span><span class="opt-text">${esc(text)}</span>`;
+    if (!ans) d.onclick = () => selectAnswer(i);
+    opts.appendChild(d);
+  });
+  
+  // feedback
+  const fb = document.getElementById('feedback');
+  if (ans) {
+    fb.className = 'feedback-box show ' + (ans.correct ? 'correct' : 'wrong');
+    fb.innerHTML = ans.correct ? '✓ Chính xác!' : `✗ Sai. Đáp án đúng là: <strong>${LABELS[q.a]}</strong>`;
+  } else {
+    fb.className = 'feedback-box';
+  }
+  
+  document.getElementById('btn-prev').disabled = idx === 0;
+  document.getElementById('btn-next').textContent = idx === total-1 ? 'Kết thúc' : 'Tiếp →';
+  
+  updateMap();
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function selectAnswer(i) {
+  if (answers[idx]) return;
+  const q = questions[idx];
+  const correct = i === q.a;
+  answers[idx] = { chosen: i, correct };
+  
+  if (document.getElementById('opt-instant').checked || true) {
+    renderQuestion();
+  }
+  
+  // auto-advance after delay
+  if (correct) {
+    setTimeout(() => { if (idx < questions.length-1) goQuestion(1); else endQuiz(); }, 800);
+  }
+}
+
+function goQuestion(dir) {
+  idx += dir;
+  if (idx < 0) idx = 0;
+  if (idx >= questions.length) { endQuiz(); return; }
+  renderQuestion();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function skipQuestion() {
+  if (!answers[idx]) answers[idx] = { chosen: -1, correct: false, skipped: true };
+  goQuestion(1);
+}
+
+function renderQuizMap() {
+  const map = document.getElementById('qmap');
+  map.innerHTML = '';
+  questions.forEach((q, i) => {
+    const d = document.createElement('div');
+    d.className = 'qmap-dot';
+    d.textContent = i+1;
+    d.onclick = () => { idx=i; renderQuestion(); };
+    map.appendChild(d);
+  });
+}
+
+function updateMap() {
+  const dots = document.querySelectorAll('.qmap-dot');
+  dots.forEach((d, i) => {
+    d.className = 'qmap-dot';
+    if (i === idx) d.classList.add('current');
+    const ans = answers[i];
+    if (ans) {
+      if (ans.skipped) d.classList.add('skipped');
+      else if (ans.correct) d.classList.add('answered-correct');
+      else d.classList.add('answered-wrong');
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// RESULT
+// ═══════════════════════════════════════════════════════
+function endQuiz() {
+  const total = questions.length;
+  const correct = answers.filter(a=>a&&a.correct).length;
+  const wrong = answers.filter(a=>a&&!a.correct&&!a.skipped).length;
+  const skipped = answers.filter(a=>a&&a.skipped).length + answers.filter(a=>!a).length;
+  const pct = Math.round(correct/total*100);
+  
+  document.getElementById('res-correct').textContent = correct;
+  document.getElementById('res-wrong').textContent = wrong;
+  document.getElementById('res-skip').textContent = skipped;
+  document.getElementById('ring-pct').textContent = pct+'%';
+  
+  const ringFill = document.getElementById('ring-fill');
+  const circ = 2 * Math.PI * 50;
+  ringFill.style.strokeDasharray = circ;
+  ringFill.style.strokeDashoffset = circ;
+  ringFill.style.stroke = pct>=80?'#3fb950':pct>=60?'#d29922':'#f85149';
+  setTimeout(() => { ringFill.style.strokeDashoffset = circ * (1 - pct/100); }, 200);
+  
+  document.getElementById('review-list').innerHTML = '';
+  show('screen-result');
+}
+
+function reviewWrong() {
+  const rl = document.getElementById('review-list');
+  rl.innerHTML = '<div style="font-size:13px;color:var(--text3);margin-bottom:12px;font-family:var(--mono)">CÁC CÂU SAI / BỎ QUA</div>';
+  let hasWrong = false;
+  answers.forEach((ans, i) => {
+    if (!ans || ans.correct) return;
+    hasWrong = true;
+    const q = questions[i];
+    const d = document.createElement('div');
+    d.className = 'review-item ' + (ans.correct?'correct':'wrong');
+    const yourTxt = ans.skipped ? '(Bỏ qua)' : LABELS[ans.chosen]+'. '+q.o[ans.chosen];
+    d.innerHTML = `<div class="review-q"><strong>Câu ${i+1}:</strong> ${esc(q.q.split('\n')[0])}</div>
+      <div class="review-meta">
+        <span class="review-yours">✗ Bạn chọn: ${esc(yourTxt)}</span>
+        <span class="review-correct">✓ Đúng: ${LABELS[q.a]}. ${esc(q.o[q.a])}</span>
+      </div>`;
+    d.onclick = () => { idx=i; show('screen-quiz'); renderQuestion(); window.scrollTo({top:0}); };
+    rl.appendChild(d);
+  });
+  if (!hasWrong) rl.innerHTML += '<div style="color:var(--green);font-size:14px;text-align:center;padding:20px">🎉 Xuất sắc! Bạn không có câu sai nào.</div>';
+}
+
+function restartQuiz() {
+  answers = new Array(questions.length).fill(null);
+  idx = 0;
+  renderQuizMap();
+  renderQuestion();
+  show('screen-quiz');
+}
+
+function goHome() {
+  show('screen-home');
+  document.getElementById('hdr-score').style.display='none';
+}
+
+function show(id) {
+  ['screen-home','screen-quiz','screen-result'].forEach(s => {
+    document.getElementById(s).classList.remove('active');
+  });
+  document.getElementById(id).classList.add('active');
+}
+
+// init
+renderParts();
+show('screen-home');
+</script>
+</body>
+</html>
